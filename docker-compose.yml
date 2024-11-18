@@ -1,67 +1,40 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  backend:
-    build:
-      context: ./backend
-    image: my-backend:latest
-    ports:
-      - "8000:8000"
-    environment:
-      - POSTGRES_HOST=database
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-      - POSTGRES_DB=${POSTGRES_DB}
-      - DJANGO_SECRET_KEY_FILE=/run/secrets/django_secret_key
-    volumes:
-      - ./backend/src:/app/src
-    depends_on:
-      - database
-    networks:
-      - app_network
-    secrets:
-      - postgres_password
-      - django_secret_key
-
-  frontend:
-    build:
-      context: ./frontend
-    image: my-frontend:latest
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend/src:/app/src
-    networks:
-      - app_network
-
   database:
     image: postgres:15
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-      - POSTGRES_DB=${POSTGRES_DB}
+      POSTGRES_USER: admin               # Utilisateur de la base de données
+      POSTGRES_PASSWORD: admin # Mot de passe de l'utilisateur
+      POSTGRES_DB: mydatabase            # Base de données par défaut
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    configs:
-      - source: postgres_config
-        target: /etc/postgresql/postgresql.conf
+      - docker_pgdata:/var/lib/postgresql/data # Volume pour la persistance des données
     networks:
-      - app_network
-    secrets:
-      - postgres_password
+      - docker_app_network
 
-volumes:
-  pgdata:
+  backend:
+    build: ./backend
+    environment:
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: mydatabase
+      DB_USER: admin
+      DB_PASSWORD: admin
+    depends_on:
+      - database
+    networks:
+      - docker_app_network
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    networks:
+      - docker_app_network
 
 networks:
-  app_network:
+  docker_app_network:  # Définir un réseau pour la communication entre les conteneurs
+    driver: bridge
 
-secrets:
-  postgres_password:
-    file: ./secrets/postgres_password
-  django_secret_key:
-    file: ./secrets/django_secret_key
-
-configs:
-  postgres_config:
-    file: ./configs/postgres-config.conf
+volumes:
+  docker_pgdata:  # Volume pour stocker les données PostgreSQL
