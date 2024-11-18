@@ -1,0 +1,10 @@
+# Docker Compose Project
+
+## Prérequis
+- Docker
+- Docker Compose
+
+## Lancer le projet
+1. Construire et démarrer les conteneurs :
+   ```bash
+   docker compose up --build
